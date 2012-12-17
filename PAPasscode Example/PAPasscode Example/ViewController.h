@@ -18,4 +18,9 @@
 - (IBAction)enterPasscode:(id)sender;
 - (IBAction)changePasscode:(id)sender;
 
+
+@property (strong, nonatomic) IBOutlet UIView *landscapeView;
+@property (strong, nonatomic) IBOutlet UIView *portraitView;
+
+
 @end

@@ -9,8 +9,17 @@
 #import <QuartzCore/QuartzCore.h>
 #import "PAPasscodeViewController.h"
 
+#ifdef DEBUG
+#define DLog(xx, ...) NSLog(@"%s(%d): " xx, ((strrchr(__FILE__, '/') ? : __FILE__- 1) + 1), __LINE__, ##__VA_ARGS__)
+#else
+#define DLog(xx, ...) ((void)0)
+#endif
+
+#define DLogRect(r) DLog(@"%s x=%f, y=%f, w=%f, h=%f", #r, r.origin.x, r.origin.y, r.size.width, r.size.height)
+
 #define NAVBAR_HEIGHT   44
-#define PROMPT_HEIGHT   74
+#define PROMPT_HEIGHT   34
+//#define LANDSCAPE_PROMPT_HEIGHT 34
 #define DIGIT_SPACING   10
 #define DIGIT_WIDTH     61
 #define DIGIT_HEIGHT    53
@@ -25,6 +34,9 @@
 #define FAILED_MARGIN   10
 #define TEXTFIELD_MARGIN 8
 #define SLIDE_DURATION  0.3
+
+#define DIGIT_PSNEL_TAG 10000
+
 
 @interface PAPasscodeViewController ()
 - (void)cancel:(id)sender;
@@ -71,17 +83,17 @@
     UIView *view = [[UIView alloc] initWithFrame:[UIScreen mainScreen].applicationFrame];
     view.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
 
-    UINavigationBar *navigationBar = [[UINavigationBar alloc] initWithFrame:CGRectMake(0, 0, view.bounds.size.width, NAVBAR_HEIGHT)];
-    navigationBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    navigationBar.items = @[self.navigationItem];
-    [view addSubview:navigationBar];
+//    UINavigationBar *navigationBar = [[UINavigationBar alloc] initWithFrame:CGRectMake(0, 0, view.bounds.size.width, NAVBAR_HEIGHT)];
+//    navigationBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+//    navigationBar.items = @[self.navigationItem];
+//    [view addSubview:navigationBar];
     
     contentView = [[UIView alloc] initWithFrame:CGRectMake(0, NAVBAR_HEIGHT, view.bounds.size.width, view.bounds.size.height-NAVBAR_HEIGHT)];
     contentView.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
     if (_backgroundView) {
         [contentView addSubview:_backgroundView];
     }
-    contentView.backgroundColor = [UIColor colorWithWhite:0.9 alpha:1.0];
+    contentView.backgroundColor = [UIColor colorWithWhite:1 alpha:1.0];
     [view addSubview:contentView];
     
     CGFloat panelWidth = DIGIT_WIDTH*4+DIGIT_SPACING*3;
@@ -89,6 +101,7 @@
         UIView *digitPanel = [[UIView alloc] initWithFrame:CGRectMake(0, 0, panelWidth, DIGIT_HEIGHT)];
         digitPanel.frame = CGRectOffset(digitPanel.frame, (contentView.bounds.size.width-digitPanel.bounds.size.width)/2, PROMPT_HEIGHT);
         digitPanel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin;
+        digitPanel.tag = DIGIT_PSNEL_TAG;
         [contentView addSubview:digitPanel];
         
         UIImage *backgroundImage = [UIImage imageNamed:@"papasscode_background"];
@@ -193,11 +206,13 @@
     [super viewWillAppear:animated];
     [self showScreenForPhase:0 animated:NO];
     [passcodeTextField becomeFirstResponder];
+    [self updateLayout];
+
 }
 
-- (NSUInteger)supportedInterfaceOrientations {
-    return UIInterfaceOrientationMaskPortrait|UIInterfaceOrientationMaskPortraitUpsideDown;
-}
+//- (NSUInteger)supportedInterfaceOrientations {
+//    return UIInterfaceOrientationMaskPortrait|UIInterfaceOrientationMaskPortraitUpsideDown;
+//}
 
 - (void)cancel:(id)sender {
     [_delegate PAPasscodeViewControllerDidCancel:self];
@@ -381,6 +396,47 @@
             [snapshotImageView removeFromSuperview];
             snapshotImageView = nil;
         }];
+    }
+}
+
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
+{
+    // Return YES for supported orientations
+    return (interfaceOrientation != UIInterfaceOrientationPortraitUpsideDown);
+}
+
+
+- (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
+{
+    [self updateLayout];
+}
+
+- (void)setupUIisLandscape
+{
+    contentView.frame = CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height);
+    for (UIView *view in contentView.subviews) {
+        if (view.tag == DIGIT_PSNEL_TAG) {
+            DLogRect(view.frame);
+        }
+    }
+}
+
+- (void)setupUIisPortrait
+{
+    contentView.frame = CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height);
+    for (UIView *view in contentView.subviews) {
+        if (view.tag == DIGIT_PSNEL_TAG) {
+            DLogRect(view.frame);
+        }
+    }
+}
+
+- (void)updateLayout
+{
+    if (self.view.bounds.size.width > self.view.bounds.size.height) {
+        [self setupUIisLandscape];
+    }else{
+        [self setupUIisPortrait];
     }
 }
 
